@@ -16,6 +16,7 @@ import Data.Text
 import System.Directory
 import System.FilePath
 import Control.Exception
+import Control.Monad
 
 data CachedResult a
   = CachedResultOk a
@@ -56,7 +57,7 @@ runCachedOperation dir f x = do
   let cacheFile = dir </> toPathPart x
   cacheExists <- doesFileExist cacheFile
   if cacheExists
-  then (eitherDecodeFileStrict' cacheFile) <&> (\case
+  then (eitherDecodeFileStrict' cacheFile) <&!> (\case
     Right (CachedResultOk x) -> x
     Right CachedResultPermanentFailure -> error "Could not resolve: Request failed"
     Left msg -> error ("Could not resolve: " <> msg))
@@ -74,3 +75,4 @@ runCachedOperation dir f x = do
       Left (_ :: SomeException) -> do
         error "Temporary failure"
 
+x <&!> f = f <$!> x
